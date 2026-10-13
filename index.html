@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Verificamos conceptualmente identidad y contenido, y modelamos un túnel entre dispositivos autorizados. Cifrar no equivale a ocultar todos los metadatos.">
+<meta name="color-scheme" content="dark">
+<title>Lab 18 · Signal, Safety Number y WireGuard | Web3 Labs</title>
+<link rel="stylesheet" href="style.css">
+<script type="module" src="script.js">
+</script>
+</head>
+<body class="lab-18">
+<a class="skip-link" href="#introduccion">Saltar al contenido</a>
+<header class="navbar">
+<a class="brand" href="../index.html">
+<span class="brand-lock">▣</span> SECURE / CHANNEL</a>
+<nav aria-label="Navegación del laboratorio">
+<a href="#desarrollo">Desarrollo</a>
+<a href="#interactivo">Explorar</a>
+<a href="#resultados">Resultados</a>
+<a href="README.md">README ↗</a>
+</nav>
+<span class="nav-code">L18 / S21</span>
+</header>
+<main>
+<header class="hero">
+<div class="hero-copy">
+<p class="eyebrow">LABORATORIO 18 <span>SESIÓN 21</span>
+</p>
+<h1>Una conversación.<br>
+<em>Dos capas de confianza.</em>
+</h1>
+<p class="hero-description">Verificamos conceptualmente identidad y contenido, y modelamos un túnel entre dispositivos autorizados. Cifrar no equivale a ocultar todos los metadatos.</p>
+<div class="hero-meta">
+<span>Signal / Safety Number / WireGuard / UDP</span>
+<span>Informe académico interactivo</span>
+</div>
+<a class="hero-link" href="#interactivo">Explorar la comunicación segura <span aria-hidden="true">↘</span>
+</a>
+</div>
+<div class="hero-art">
+<div class="message-art">
+<div class="message-header">
+<span class="avatar">A</span>
+<div>
+<strong>Equipo Aurora</strong>
+<small>Conversación de prueba</small>
+</div>
+<span class="lock-symbol">◇</span>
+</div>
+<div class="message-bubble incoming">¿La clave corresponde a nuestro contacto?</div>
+<div class="message-bubble outgoing">Comparamos el Safety Number por un canal confiable.</div>
+<div class="message-seal">E2EE <span>Contenido entre dispositivos</span>
+</div>
+<div class="tunnel-mini">
+<span>DISPOSITIVO A</span>
+<div class="tunnel-line">
+</div>
+<span>DISPOSITIVO B</span>
+</div>
+<p class="art-note">Ilustración de identidad y transporte.</p>
+</div>
+</div>
+<div class="hero-footer">
+<span>IDENTIDAD · MENSAJE · TÚNEL</span>
+<span>HTML · CSS · JavaScript</span>
+</div>
+</header>
+<div class="report-layout">
+<aside class="chapter-nav" aria-label="Índice del informe">
+<span>EN ESTE INFORME</span>
+<a href="#introduccion">01 / Contexto</a>
+<a href="#instrucciones">02 / Instrucciones</a>
+<a href="#objetivos">03 / Objetivos</a>
+<a href="#tecnologias">04 / Tecnologías</a>
+<a href="#desarrollo">05 / Desarrollo</a>
+<a href="#interactivo">06 / Interacción</a>
+<a href="#resultados">07 / Resultados</a>
+<a href="#analisis">08 / Análisis crítico</a>
+<a href="#rubrica">09 / Rúbrica</a>
+<a href="#conclusiones">10 / Conclusiones</a>
+<a href="#aprendizajes">11 / Aprendizajes</a>
+</aside>
+<div class="report">
+<section id="introduccion" class="report-section " aria-labelledby="introduccion-title">
+<div class="section-heading">
+<span class="section-index">introduccion</span>
+<h2 id="introduccion-title">Introducción</h2>
+</div>
+<p>La mensajería segura y un túnel de red protegen capas diferentes. Signal cifra conversaciones entre dispositivos; WireGuard transporta paquetes IP por un canal autenticado entre peers configurados. Analizamos por qué verificar una identidad criptográfica, proteger contenido y gestionar rutas constituyen decisiones relacionadas, pero no equivalentes. También comparamos estas herramientas con Tor para ubicar qué adversario observa cada tramo.</p>
+<p>El escenario consiste en dos dispositivos autorizados del venture Aurora. Usamos mensajes y números de demostración, direcciones privadas de ejemplo y una configuración explicativa que nunca incluye claves privadas. No atribuimos verificaciones de contactos, handshakes ni conectividad real a esta entrega. El navegador modela estados y permite interpretar lo que significaría una comprobación técnica válida.</p>
+</section>
+<section id="instrucciones" class="report-section instructions" aria-labelledby="instrucciones-title">
+<div class="section-heading">
+<span class="section-index">instrucciones</span>
+<h2 id="instrucciones-title">Instrucciones del laboratorio</h2>
+</div>
+<p>En este laboratorio trabajamos en Visual Studio Code para desarrollar un informe sobre verificación de identidad en Signal y transporte seguro entre dos dispositivos autorizados mediante WireGuard. Describimos la comparación del Safety Number por un canal confiable, explicando que su coincidencia autentica la relación de claves dentro de ese proceso y no demuestra por sí sola que un dispositivo esté libre de compromiso. Separamos el contenido protegido por cifrado de extremo a extremo de información observable por el servicio, la red y los endpoints, y construimos una tabla de metadatos con alcances explícitos. Analizamos la arquitectura del túnel, el intercambio de claves públicas, el handshake, el transporte UDP y la función de AllowedIPs en selección de rutas y validación de orígenes. Presentamos configuraciones y salidas ilustrativas de wg show y conectividad, sin incluir claves privadas, teléfonos reales ni credenciales. Implementamos una conversación educativa, un comparador de números ficticios y una visualización por etapas del handshake, diferenciando modelos locales de verificaciones externas. Elaboramos E2EE.md sobre forward secrecy, post-compromise security, recuperación tras compromiso y acceso excepcional, incluyendo la discusión Keys Under Doormats. Comparamos Signal, Tor y WireGuard por objetivos y actores, y entregamos HTML, CSS, JavaScript y README con resultados interpretados, límites operativos y conclusiones sobre identidad, contenido y metadatos.</p>
+</section>
+<section id="objetivos" class="report-section " aria-labelledby="objetivos-title">
+<div class="section-heading">
+<span class="section-index">objetivos</span>
+<h2 id="objetivos-title">Objetivos</h2>
+</div>
+<div class="concept-grid">
+<article class="concept-card">
+<h3>Verificar identidad</h3>
+<p>Entendemos qué afirma la comparación de un Safety Number, por qué importa un canal confiable y cómo interpretar cambios de claves sin inventar verificación de contactos.</p>
+</article>
+<article class="concept-card">
+<h3>Interpretar un túnel</h3>
+<p>Relacionamos peers, claves públicas, handshake, rutas y AllowedIPs. Distinguimos autenticación del canal y conectividad de la aplicación.</p>
+</article>
+<article class="concept-card">
+<h3>Analizar recuperación</h3>
+<p>Separamos protección de mensajes anteriores, evolución de claves y riesgo de un endpoint controlado por un atacante. Elegimos respuestas acordes al compromiso.</p>
+</article>
+</div>
+</section>
+<section id="tecnologias" class="report-section " aria-labelledby="tecnologias-title">
+<div class="section-heading">
+<span class="section-index">tecnologias</span>
+<h2 id="tecnologias-title">Tecnologías utilizadas</h2>
+</div>
+<div class="concept-grid">
+<article class="concept-card">
+<h3>Signal y Safety Number</h3>
+<p>Signal proporciona E2EE; la verificación permite contrastar la identidad de claves de una conversación. El procedimiento se documenta junto con sus límites.</p>
+</article>
+<article class="concept-card">
+<h3>Ratchets</h3>
+<p>Los esquemas de evolución de claves buscan limitar exposición histórica y posibilitar recuperación criptográfica bajo condiciones concretas. No reparan por sí solos un dispositivo infectado.</p>
+</article>
+<article class="concept-card">
+<h3>WireGuard</h3>
+<p>Túnel de capa IP entre peers autenticados por claves públicas. Encapsula tráfico en UDP y utiliza un handshake del diseño Noise.</p>
+</article>
+<article class="concept-card">
+<h3>AllowedIPs</h3>
+<p>Asocia prefijos IP con un peer para envío y valida el origen de paquetes recibidos de él. No sustituye a una política completa de firewall.</p>
+</article>
+</div>
+</section>
+<section id="desarrollo" class="report-section " aria-labelledby="desarrollo-title">
+<div class="section-heading">
+<span class="section-index">desarrollo</span>
+<h2 id="desarrollo-title">Desarrollo del laboratorio</h2>
+</div>
+<article class="subsection">
+<h3>01 / Comparar identidad en Signal</h3>
+<p>Para verificar un contacto real, las partes comparan el número o QR de seguridad de su conversación mediante un canal cuya autenticidad ya conocen, idealmente en persona. La comparación debe corresponder a los mismos participantes y dispositivo o estado vigente. Una coincidencia observada por un canal no confiable puede reproducir un engaño, por lo que importa tanto el valor como el contexto de verificación.</p>
+<p>El ejemplo visual usa sesenta dígitos ficticios agrupados; no reproduce el cálculo real de Signal ni pertenece a una persona. El modo de cambio altera un grupo para explicar una discrepancia. La documentación <a href="https://support.signal.org/hc/en-us/articles/360007060632-What-is-a-safety-number" target="_blank" rel="noopener">Signal: Safety Numbers</a> describe el mecanismo real. Un cambio puede originarse en situaciones legítimas de claves o dispositivos; interpretarlo requiere reconfirmar identidad antes de una conversación sensible.</p>
+</article>
+<figure class="diagram">
+<div class="flow">
+<div class="flow-node">
+<span class="node-index">01</span>
+<strong>Contacto</strong>
+<small>Identidad conocida</small>
+</div>
+<span class="flow-arrow" aria-hidden="true">→</span>
+<div class="flow-node">
+<span class="node-index">02</span>
+<strong>Canal confiable</strong>
+<small>Comparación independiente</small>
+</div>
+<span class="flow-arrow" aria-hidden="true">→</span>
+<div class="flow-node">
+<span class="node-index">03</span>
+<strong>Safety Number</strong>
+<small>Coincidencia de claves</small>
+</div>
+<span class="flow-arrow" aria-hidden="true">→</span>
+<div class="flow-node">
+<span class="node-index">04</span>
+<strong>Decisión</strong>
+<small>Confirmar o revisar cambio</small>
+</div>
+</div>
+<figcaption>Verificación de identidad: contexto antes de coincidencia.</figcaption>
+</figure>
+<article class="subsection">
+<h3>02 / Separar contenido y metadatos</h3>
+<p>El cifrado de extremo a extremo protege el contenido entre participantes y excluye al servicio de la lectura del payload cifrado bajo el modelo normal. El proveedor todavía opera infraestructura y puede observar información necesaria para prestar el servicio. No tratamos todo lo observable como algo almacenado indefinidamente: capacidad de observación, diseño de minimización y retención efectiva son preguntas distintas.</p>
+<div class="table-scroll">
+<table>
+<caption>Información por actor en el escenario de mensajería</caption>
+<thead>
+<tr>
+<th scope="col">Actor</th>
+<th scope="col">Puede observar en su posición</th>
+<th scope="col">No obtiene por E2EE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">Servicio Signal</th>
+<td>Registro y operación del servicio; conexiones, con medidas de minimización</td>
+<td>Texto y adjuntos E2EE en claro por transportar mensajes</td>
+</tr>
+<tr>
+<th scope="row">Red local / ISP</th>
+<td>IP de conexión, tiempos y volumen del tráfico</td>
+<td>Contenido cifrado de mensajes</td>
+</tr>
+<tr>
+<th scope="row">Contacto receptor</th>
+<td>Contenido recibido, identidad comunicada y contexto</td>
+<td>Datos ajenos a la conversación por el mero cifrado</td>
+</tr>
+<tr>
+<th scope="row">Dispositivo con acceso local</th>
+<td>Mensajes visibles, archivos y estado de la sesión</td>
+<td>La protección E2EE no impide lectura en el endpoint</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>No afirmamos un inventario fijo de todos los metadatos de Signal. Mecanismos como sealed sender buscan reducir ciertas asociaciones visibles al servicio, pero no hacen desaparecer la conexión de red ni el riesgo del dispositivo. Para el venture priorizamos mensajes de prueba en la demostración y una explicación por actor en lugar de representar un cifrado como invisibilidad universal.</p>
+</article>
+<article class="subsection">
+<h3>03 / Configurar peers WireGuard autorizados</h3>
+<p>Cada dispositivo genera y conserva su clave privada en su entorno y comunica únicamente la pública al otro participante por un canal apropiado. El peer se identifica criptográficamente mediante esa clave; el endpoint indica cómo alcanzarlo. Las direcciones privadas del túnel se acuerdan sin coincidir accidentalmente con otras redes del dispositivo. La configuración incluida es esquemática y no contiene material secreto.</p>
+<figure class="code-block">
+<figcaption>
+<span>Configuración conceptual del dispositivo A · sin claves</span>
+<span>Configuración</span>
+</figcaption>
+<pre>
+<code data-language="Configuración">[Interface]
+# PrivateKey se configura localmente; se omite por seguridad.
+Address = 10.77.0.1/24
+ListenPort = 51820
+
+[Peer]
+# PublicKey: clave pública real de B, intercambiada fuera de esta página.
+AllowedIPs = 10.77.0.2/32
+# Endpoint se configura con el destino autorizado de B.
+# B usa Address 10.77.0.2/24 y AllowedIPs 10.77.0.1/32.</code>
+</pre>
+</figure>
+<p>Esta vista no es un archivo directamente activable: los valores de identidad y endpoint pertenecen a la configuración local de los dispositivos y no se inventan aquí. AllowedIPs 10.77.0.2/32 asigna ese destino al peer B para envío y limita las IP de origen aceptables de paquetes autenticados de B. La herramienta de configuración y el sistema operativo deben instalar rutas; un firewall aparte decide otros permisos. No utilizamos un prefijo de ruta universal para ocultar el alcance de la prueba.</p>
+</article>
+<article class="subsection">
+<h3>04 / Handshake y verificación operacional</h3>
+<p>El handshake autentica peers y deriva claves de sesión utilizando el diseño criptográfico de WireGuard. El transporte posterior lleva paquetes IP encapsulados en UDP. Un observador externo todavía ve endpoints, puerto, horarios y volumen. La documentación <a href="https://www.wireguard.com/protocol/" target="_blank" rel="noopener">WireGuard: protocolo</a> describe el uso de claves efímeras y el transporte; la visualización reduce el proceso a etapas educativas sin presentarse como traza de paquetes.</p>
+<figure class="code-block">
+<figcaption>
+<span>wg show · resumen de salida ilustrativa</span>
+<span>Terminal</span>
+</figcaption>
+<pre>
+<code data-language="Terminal">interface: wg0
+  public key: [omitida en el ejemplo]
+  private key: (hidden)
+  listening port: 51820
+
+peer: [clave pública omitida en el ejemplo]
+  endpoint: 192.0.2.2:51820
+  allowed ips: 10.77.0.2/32
+  latest handshake: 12 seconds ago
+  transfer: 1.25 KiB received, 1.41 KiB sent</code>
+</pre>
+</figure>
+<p>192.0.2.2 pertenece a un rango de documentación y no señala un dispositivo real. En una comprobación auténtica, latest handshake reciente y contadores que aumentan permiten interpretar actividad del túnel. Una prueba ping a la IP privada evalúa conectividad ICMP si el firewall la permite; su falla no demuestra por sí sola una falla criptográfica. Un handshake correcto tampoco garantiza que una aplicación escuche, que una ruta sea correcta o que el receptor permita el protocolo solicitado.</p>
+</article>
+</section>
+<section id="interactivo" class="report-section interactive-section" aria-labelledby="interactivo-title">
+<div class="section-heading">
+<span class="section-index">interactivo</span>
+<h2 id="interactivo-title">Identidad y transporte / laboratorio de capas</h2>
+</div>
+<p class="note">Números, conversación y handshake son ejemplos didácticos locales. No representan contactos de Signal ni un túnel activo.</p>
+<div class="secure-lab">
+<div class="safety-panel">
+<p class="eyebrow">VERIFICACIÓN DE IDENTIDAD</p>
+<h3>Dos vistas del Safety Number</h3>
+<div class="safety-number" id="safety-a">10492 87361 20548 39170 64285 01936<br>75104 28693 43017 96258 10374 58620</div>
+<div class="safety-number" id="safety-b">10492 87361 20548 39170 64285 01936<br>75104 28693 43017 96258 10374 58620</div>
+<div class="experiment-controls">
+<button id="safety-change" aria-pressed="false">Mostrar cambio de claves</button>
+<button id="safety-compare">Comparar números de prueba</button>
+</div>
+<p id="safety-result" aria-live="polite">Comparamos la identidad por un canal confiable; el contenido cifrado es otra propiedad.</p>
+</div>
+<div class="encrypted-chat">
+<div class="message-bubble incoming">Documento de prueba recibido.</div>
+<button id="message-layer" aria-pressed="false">Ver perspectiva del transporte</button>
+<pre id="payload-view">Vista del receptor: «Documento de prueba recibido.»</pre>
+</div>
+<div class="wireguard-demo">
+<h3>Handshake del túnel autorizado</h3>
+<div class="handshake-path">
+<span id="device-a">A / 10.77.0.1</span>
+<div id="tunnel-state">Sin sesión</div>
+<span id="device-b">B / 10.77.0.2</span>
+</div>
+<div class="handshake-stages">
+<span>Identidad</span>
+<span>Inicio</span>
+<span>Respuesta</span>
+<span>Transporte</span>
+</div>
+<button id="handshake-next">Avanzar handshake</button>
+<button id="handshake-reset">Reiniciar túnel</button>
+<p id="handshake-output" aria-live="polite">Las claves públicas identifican peers; las privadas permanecen en cada dispositivo.</p>
+</div>
+</div>
+</section>
+<section id="resultados" class="report-section " aria-labelledby="resultados-title">
+<div class="section-heading">
+<span class="section-index">resultados</span>
+<h2 id="resultados-title">Resultados e interpretación</h2>
+</div>
+<p>La comparación ficticia muestra coincidencia o discrepancia sin afirmar una verificación real de Signal. La conversación separa vista del receptor y perspectiva de transporte, donde el contenido se expresa como un payload opaco ilustrativo, no como ciphertext generado por Signal. El modelo de WireGuard recorre identificación, inicio, respuesta y transporte y explica el significado de cada transición.</p>
+<p>Las salidas de consola son referencias para interpretar una operación autorizada. Este entorno no ejecutó un túnel entre dos dispositivos; por ello no mostramos un handshake real, latencias medidas ni claves. E2EE.md desarrolla los mecanismos de evolución de claves y una respuesta ante compromiso, diferenciando recuperación criptográfica de saneamiento del endpoint.</p>
+<div class="table-scroll">
+<table>
+<caption>Propósito y frontera de confianza</caption>
+<thead>
+<tr>
+<th scope="col">Herramienta</th>
+<th scope="col">Protege principalmente</th>
+<th scope="col">Actores y límites</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">Signal</th>
+<td>Contenido de conversación entre dispositivos</td>
+<td>Servicio no lee el payload E2EE; endpoints sí</td>
+</tr>
+<tr>
+<th scope="row">Tor + HTTPS</th>
+<td>Exposición del origen al destino y ruta distribuida</td>
+<td>Metadatos, correlación y cuentas permanecen relevantes</td>
+</tr>
+<tr>
+<th scope="row">WireGuard</th>
+<td>Paquetes entre peers autenticados</td>
+<td>Peers del túnel ven tráfico que reciben; externos ven endpoints</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="analisis" class="report-section " aria-labelledby="analisis-title">
+<div class="section-heading">
+<span class="section-index">analisis</span>
+<h2 id="analisis-title">Análisis crítico</h2>
+</div>
+<article class="subsection">
+<h3>Forward secrecy y recuperación</h3>
+<p>Forward secrecy limita el impacto del compromiso posterior de material de largo plazo sobre mensajes anteriores, cuando las claves anteriores fueron eliminadas y se cumplen los supuestos del protocolo. Post-compromise security busca recuperar confidencialidad futura después de que el adversario deje de acceder al estado y se incorpore material nuevo no conocido por él. Son propiedades condicionales; no autorizan seguir usando un equipo controlado activamente.</p>
+<p>La evolución de claves de la familia Signal usa ratchets; su documentación distingue cadenas de mensajes y actualización del estado. Para el venture, responder a un compromiso significa aislar el equipo, sanear o reemplazar el entorno, revisar sesiones y reconfirmar identidad por un canal confiable. Si el atacante lee cada mensaje en pantalla, ningún ratchet oculta ese mensaje al dispositivo que lo presenta. WireGuard utiliza renovación de sesiones, pero no se le atribuye automáticamente la misma garantía de recuperación del protocolo de mensajería.</p>
+</article>
+<article class="subsection">
+<h3>Acceso excepcional</h3>
+<p>Keys Under Doormats examina los riesgos de obligar a sistemas cifrados a incorporar acceso excepcional: aumenta complejidad y crea capacidades atractivas para atacantes. La discusión académica distingue la finalidad de una investigación legítima del mecanismo técnico propuesto; una vía adicional de acceso puede alterar las propiedades que se pretende preservar. Nuestra interpretación se apoya en <a href="https://dspace.mit.edu/handle/1721.1/97690" target="_blank" rel="noopener">el informe de investigación</a>, sin convertir una política pública en una función trivial del cifrado.</p>
+</article>
+</section>
+<section id="rubrica" class="report-section " aria-labelledby="rubrica-title">
+<div class="section-heading">
+<span class="section-index">rubrica</span>
+<h2 id="rubrica-title">Rúbrica de evaluación</h2>
+</div>
+<p class="note">Criterios y porcentajes originales proporcionados para este laboratorio. La columna de alcance describe lo presentado, sin asignar una calificación ni acreditar ejecuciones externas.</p>
+<div class="table-scroll">
+<table>
+<caption>Rúbrica académica original · laboratorio 18</caption>
+<thead>
+<tr>
+<th scope="col">Criterio</th>
+<th scope="col">Peso</th>
+<th scope="col">Alcance del trabajo presentado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">Safety Number verificado y documentado</th>
+<td>20%</td>
+<td>Comparación didáctica de números ficticios; no verificación de contactos reales.</td>
+</tr>
+<tr>
+<th scope="row">Tabla de información que Signal puede observar y contenido que no puede leer</th>
+<td>20%</td>
+<td>Separamos servicio, red y dispositivos.</td>
+</tr>
+<tr>
+<th scope="row">Túnel WireGuard operativo o bloqueo documentado</th>
+<td>25%</td>
+<td>Modelo y salida ilustrativa; este entorno no ejecuta un túnel entre dispositivos.</td>
+</tr>
+<tr>
+<th scope="row">E2EE.md sobre forward secrecy, post-compromise security y acceso excepcional</th>
+<td>25%</td>
+<td>Documento incluido con análisis de recuperación y Keys Under Doormats.</td>
+</tr>
+<tr>
+<th scope="row">Comentarios de aprendizaje</th>
+<td>10%</td>
+<td>Interpretación de identidad, contenido y metadatos.</td>
+</tr>
+</tbody>
+<tfoot>
+<tr>
+<th scope="row">Total</th>
+<td>100%</td>
+<td>Las simulaciones se identifican y no acreditan ejecuciones externas.</td>
+</tr>
+</tfoot>
+</table>
+</div>
+<p class="note">Restricciones aplicadas: solo dispositivos autorizados, números ficticios, ausencia de claves privadas, teléfonos reales y credenciales. No se proporcionó texto adicional de penalizaciones; no asignamos deducciones ni sanciones inventadas.</p>
+</section>
+<section id="conclusiones" class="report-section " aria-labelledby="conclusiones-title">
+<div class="section-heading">
+<span class="section-index">conclusiones</span>
+<h2 id="conclusiones-title">Conclusiones</h2>
+</div>
+<ol class="conclusions">
+<li>La comparación de identidad y el cifrado cumplen funciones complementarias. Una coincidencia de Safety Number interpretada correctamente vincula claves, pero no certifica el estado de seguridad del dispositivo.</li>
+<li>La observación de metadatos depende del actor y de la implementación. Separar red, servicio y endpoints evita atribuir al E2EE una promesa de invisibilidad que no sostiene.</li>
+<li>WireGuard autentica peers y protege transporte de paquetes. AllowedIPs relaciona rutas y validación de origen; un handshake debe complementarse con interpretación de rutas y permisos.</li>
+<li>La recuperación después de compromiso exige actuar sobre el endpoint. Forward secrecy y post-compromise security aportan límites criptográficos útiles bajo supuestos, mientras que acceso excepcional puede introducir nuevas superficies de riesgo.</li>
+</ol>
+</section>
+<section id="aprendizajes" class="report-section " aria-labelledby="aprendizajes-title">
+<div class="section-heading">
+<span class="section-index">aprendizajes</span>
+<h2 id="aprendizajes-title">Aprendizajes</h2>
+</div>
+<p>Aprendimos a distinguir identidad verificada, contenido cifrado y transporte seguro, y a interpretar metadatos desde posiciones concretas. Comprendimos que la evolución de claves tiene condiciones de seguridad y que recuperar un dispositivo comprometido requiere medidas operativas además de propiedades criptográficas.</p>
+</section>
+<section id="documentacion" class="report-section " aria-labelledby="documentacion-title">
+<div class="section-heading">
+<span class="section-index">documentacion</span>
+<h2 id="documentacion-title">Documentación y fuentes</h2>
+</div>
+<a class="doc-link" href="README.md">Leer el README del laboratorio 18 ↗</a>
+<a class="doc-link" href="E2EE.md">Consultar E2EE.md ↗</a>
+<p>Las referencias fundamentan los protocolos y las declaraciones atribuidas. Los cálculos locales, modelos didácticos y límites de observación se explican junto a cada resultado.</p>
+<ul class="sources">
+<li>
+<a href="https://support.signal.org/hc/en-us/articles/360007060632-What-is-a-safety-number" target="_blank" rel="noopener noreferrer">Signal · Safety Numbers ↗</a>
+</li>
+<li>
+<a href="https://signal.org/docs/specifications/doubleratchet/" target="_blank" rel="noopener noreferrer">Signal · Double Ratchet ↗</a>
+</li>
+<li>
+<a href="https://signal.org/blog/sealed-sender/" target="_blank" rel="noopener noreferrer">Signal · sealed sender ↗</a>
+</li>
+<li>
+<a href="https://www.wireguard.com/quickstart/" target="_blank" rel="noopener noreferrer">WireGuard · configuración y verificación ↗</a>
+</li>
+<li>
+<a href="https://www.wireguard.com/protocol/" target="_blank" rel="noopener noreferrer">WireGuard · protocolo ↗</a>
+</li>
+<li>
+<a href="https://dspace.mit.edu/handle/1721.1/97690" target="_blank" rel="noopener noreferrer">MIT · Keys Under Doormats ↗</a>
+</li>
+</ul>
+</section>
+</div>
+</div>
+</main>
+<footer class="site-footer">
+<a href="../index.html">← Colección Web3 Labs</a>
+<p>Laboratorio 18 · Signal, Safety Number y WireGuard · Sesión 21</p>
+<a href="#">Volver al inicio ↑</a>
+</footer>
+</body>
+</html>
